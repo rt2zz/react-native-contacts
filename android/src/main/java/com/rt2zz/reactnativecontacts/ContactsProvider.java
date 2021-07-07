@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
 
 import static android.provider.ContactsContract.CommonDataKinds.Contactables;
 import static android.provider.ContactsContract.CommonDataKinds.Email;
@@ -307,9 +308,10 @@ public class ContactsProvider {
     private Map<String, Contact> loadContactsFrom(Cursor cursor) {
 
         Map<String, Contact> map = new LinkedHashMap<>();
-
+        HashSet<String> normalizedNumbers = new HashSet<>();
         while (cursor != null && cursor.moveToNext()) {
-
+            String phone = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NORMALIZED_NUMBER));
+            if (normalizedNumbers.add(phone) == true){
             int columnIndexContactId = cursor.getColumnIndex(ContactsContract.Data.CONTACT_ID);
             int columnIndexId = cursor.getColumnIndex(ContactsContract.Data._ID);
             int columnIndexRawContactId = cursor.getColumnIndex(ContactsContract.Data.RAW_CONTACT_ID);
@@ -348,7 +350,7 @@ public class ContactsProvider {
             if (!TextUtils.isEmpty(name) && TextUtils.isEmpty(contact.displayName)) {
                 contact.displayName = name;
             }
-
+            contact.normalizeNumber = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NORMALIZED_NUMBER));
             if (TextUtils.isEmpty(contact.photoUri)) {
                 String rawPhotoURI = cursor.getString(cursor.getColumnIndex(Contactables.PHOTO_URI));
                 if (!TextUtils.isEmpty(rawPhotoURI)) {
@@ -396,6 +398,7 @@ public class ContactsProvider {
                                 label = "other";
                         }
                         contact.phones.add(new Contact.Item(label, phoneNumber, id));
+                     
                     }
                     break;
                 case Email.CONTENT_ITEM_TYPE:
@@ -555,6 +558,7 @@ public class ContactsProvider {
                     contact.note = cursor.getString(cursor.getColumnIndex(Note.NOTE));
                     break;
             }
+            }
         }
 
         return map;
@@ -595,7 +599,8 @@ public class ContactsProvider {
         private String company = "";
         private String jobTitle = "";
         private String department = "";
-        private String note ="";
+        private String note = "";
+        private String normalizeNumber = "";
         private List<Item> urls = new ArrayList<>();
         private List<Item> instantMessengers = new ArrayList<>();
         private boolean hasPhoto = false;
@@ -624,6 +629,7 @@ public class ContactsProvider {
             contact.putString("jobTitle", jobTitle);
             contact.putString("department", department);
             contact.putString("note", note);
+            contact.putString("normalizeNumber", normalizeNumber);
             contact.putBoolean("hasThumbnail", this.hasPhoto);
             contact.putString("thumbnailPath", photoUri == null ? "" : photoUri);
 
